@@ -1,46 +1,51 @@
+
 import 'dart:io';
 
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:camera/camera.dart';
-import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
-class RealTimeImageLabeling extends StatefulWidget {
+class BarcodeScanning extends StatefulWidget {
   final List<CameraDescription> cameras;
 
-  const RealTimeImageLabeling({Key? key, required this.cameras}) : super(key: key);
+  const BarcodeScanning({Key? key, required this.cameras}) : super(key: key);
 
   @override
-  State<RealTimeImageLabeling> createState() => _CameraScreenState();
+  State<BarcodeScanning> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<RealTimeImageLabeling> {
-
+class _CameraScreenState extends State<BarcodeScanning> {
   late CameraController controller;
-
   CameraImage? img;
   bool isBusy = false;
-  String result = "";
-  dynamic imageLabeler;
+  String result = "results will be shown";
 
-  // ---function to data represents-------
+  //TODO declare scanner
+  dynamic barcodeScanner;
+
+
+  // ----ui component----
   List<Widget> _buildResultList() {
     List<String> lines = result.trim().split("\n");
 
     return lines.map((line) {
-      final parts = line.trim().split("   ");
+      final parts = line.split("   ");
       final label = parts[0];
       final conf = parts.length > 1 ? parts[1] : "";
+      // here you can save the barCode no issue.
+
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               label,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
@@ -48,7 +53,7 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
             Text(
               conf,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.deepPurple,
               ),
@@ -58,33 +63,27 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
       );
     }).toList();
   }
-  //----end the function --------
-
+  //---end ui component---
   @override
   void initState() {
     super.initState();
-    //TODO initialize labeler
-    final ImageLabelerOptions options = ImageLabelerOptions(confidenceThreshold: 0.5);
-    imageLabeler = ImageLabeler(options: options);
+    //TODO initialize scanner
+    final List<BarcodeFormat> formats = [BarcodeFormat.all];// here barCode scan all format there is in a ml kit
+    barcodeScanner = BarcodeScanner(formats: formats);
 
     //TODO initialize the controller
     controller = CameraController(
-      widget.cameras[1],// here you change back camra and front camera 0 is back and 1 is front camra
-      ResolutionPreset.high, imageFormatGroup: Platform.isAndroid
-        ? ImageFormatGroup.nv21 // for Android
-        : ImageFormatGroup.bgra8888,);
+      widget.cameras[0],// here back camra
+      ResolutionPreset.high,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.nv21 // for Android
+          : ImageFormatGroup.bgra8888,);
     controller.initialize().then((_) {
       if (!mounted) {
         return;
       }
-      controller.startImageStream((image) =>
-      {
-        if (!isBusy)
-          {
-            isBusy = true,
-            img = image,
-            doImageLabeling()
-          }
+      controller.startImageStream((image) => {
+        if (!isBusy) {isBusy = true, img = image, doBarcodeScanning()}
       });
       setState(() {});
     }).catchError((Object e) {
@@ -101,16 +100,55 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
     });
   }
 
-  doImageLabeling() async {
+  //TODO barcode scanning code here
+  doBarcodeScanning() async {
     result = "";
     InputImage? inputImg = getInputImage();
-    final List<ImageLabel> labels = await imageLabeler.processImage(inputImg);
-    for (ImageLabel label in labels) {
-      final String text = label.label;
-      final int index = label.index;
-      final double confidence = label.confidence;
-      result += "$text   ${confidence.toStringAsFixed(2)}\n";
-      print("===--70---$result");
+    final List<Barcode> barcodes = await barcodeScanner.processImage(inputImg);
+
+    for (Barcode barcode in barcodes) {
+      final BarcodeType type = barcode.type;
+      final Rect? boundingBox = barcode.boundingBox;
+      final String? displayValue = barcode.displayValue;
+      final String? rawValue = barcode.rawValue;
+
+      // See API reference for complete list of supported types
+      switch (type) {
+        case BarcodeType.wifi:
+          BarcodeWifi? barcodeWifi = barcode.value as BarcodeWifi?;
+          if(barcodeWifi !=null) {
+            result = "Wifi: ${barcodeWifi.password!}";
+          }
+          break;
+        case BarcodeType.url:
+          BarcodeUrl? barcodeUrl = barcode.value as BarcodeUrl;
+          if(barcodeUrl != null) {
+            result = "Url: ${barcodeUrl.url!}";
+          }
+          break;
+        case BarcodeType.unknown:
+        // TODO: Handle this case.
+        case BarcodeType.contactInfo:
+        // TODO: Handle this case.
+        case BarcodeType.email:
+        // TODO: Handle this case.
+        case BarcodeType.isbn:
+        // TODO: Handle this case.
+        case BarcodeType.phone:
+        // TODO: Handle this case.
+        case BarcodeType.product:
+        // TODO: Handle this case.
+        case BarcodeType.sms:
+        // TODO: Handle this case.
+        case BarcodeType.text:
+        // TODO: Handle this case.
+        case BarcodeType.geoCoordinates:
+        // TODO: Handle this case.
+        case BarcodeType.calendarEvent:
+        // TODO: Handle this case.
+        case BarcodeType.driverLicense:
+        // TODO: Handle this case.
+      }
     }
     setState(() {
       result;
@@ -129,7 +167,6 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
     // it is used in android to convert the InputImage from Dart to Java
     // `rotation` is not used in iOS to convert the InputImage from Dart to Obj-C
     // in both platforms `rotation` and `camera.lensDirection` can be used to compensate `x` and `y` coordinates on a canvas
-    //final camera = _cameras[1];
     final camera = widget.cameras[1];
     final sensorOrientation = camera.sensorOrientation;
     InputImageRotation? rotation;
@@ -143,11 +180,13 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
         rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
       } else {
         // back-facing
-        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+        rotationCompensation =
+            (sensorOrientation - rotationCompensation + 360) % 360;
       }
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
     }
     if (rotation == null) return null;
+
     // get image format
     final format = InputImageFormatValue.fromRawValue(img!.format.raw);
     // validate format depending on platform
@@ -166,15 +205,13 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
     return InputImage.fromBytes(
       bytes: plane!.bytes,
       metadata: InputImageMetadata(
-        size: Size(img!.width.toDouble(),
-            img!.height.toDouble()),
+        size: Size(img!.width.toDouble(), img!.height.toDouble()),
         rotation: rotation, // used only in Android
         format: format, // used only in iOS
         bytesPerRow: plane.bytesPerRow, // used only in iOS
       ),
     );
   }
-
   @override
   void dispose() {
     controller.dispose();
@@ -196,7 +233,7 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Image Label"),
+        title: const Text("BarCode Scanning"),
         backgroundColor: Colors.black87,
         elevation: 2,
       ),
@@ -208,10 +245,10 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
         child: Column(
           children: [
             // =============================
-            //  CAMERA PREVIEW (60% height)
+            //  CAMERA PREVIEW (80% height)
             // =============================
             Expanded(
-              flex: 6, // 60%
+              flex: 8, // 80%
               child: Card(
                 elevation: 6,
                 shape: RoundedRectangleBorder(
@@ -228,7 +265,7 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
             //   LABEL RESULT CARD
             // =============================
             Expanded(
-              flex: 4, // remaining 40%
+              flex: 2, // 20%
               child: Card(
                 color: Colors.white,
                 elevation: 5,
@@ -236,15 +273,14 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: SingleChildScrollView(
                     child: result.isEmpty
                         ? const Center(
                       child: Text(
                         "Scanning...",
                         style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
                           color: Colors.grey,
                         ),
                       ),
@@ -263,4 +299,3 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
     );
   }
 }
-

@@ -1,20 +1,32 @@
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-
 import 'package:flutter/cupertino.dart';
+import 'package:image_labeling/realtimeimagelabeling.dart';
+import 'package:image_labeling/textrecognigation.dart';
+import 'barcode_scanning.dart';
+import 'face_dection.dart';
 import 'imagelabeling.dart';
+import 'objectDection.dart';
 
-void main() {
+
+late List<CameraDescription> cameras;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  cameras = await availableCameras();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const MyHome(),
+      home: MyHome(),      // home: const MyHome(),()
     );
   }
 }
@@ -64,7 +76,7 @@ class _MyHomeState extends State<MyHome> {
                color: Colors.white,
                fontSize: 16
              ),),),
-              SizedBox(height: 15),
+              SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,            // Button background
@@ -79,13 +91,104 @@ class _MyHomeState extends State<MyHome> {
                   // TODO: your function here
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ImageLabeling()),
-                  );
+                    MaterialPageRoute(builder: (context) => RealTimeImageLabeling(cameras: cameras)));
                   print('------ImageLabeling-----');
                 }, child: Text(' RealTime Image Labeling',style: TextStyle(
                   color: Colors.white,
                   fontSize: 16
               ),),),
+              SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,            // Button background
+                  foregroundColor: Colors.white,            // Text color
+                  shape: const StadiumBorder(),             // Stadium shape
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: your function here
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BarcodeScanning(cameras: cameras)));
+                  print('------ImageLabeling-----');
+                }, child: Text('BarCodeScanning',style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16
+              ),),),
+              //  TextRecognition
+              SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,            // Button background
+                  foregroundColor: Colors.white,            // Text color
+                  shape: const StadiumBorder(),             // Stadium shape
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: your function here
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => TextRecognitionScreen(cameras: cameras)));
+                  print('------ImageLabeling-----');
+                }, child: Text('TextRecognition',style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16
+              ),),),
+              SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,            // Button background
+                  foregroundColor: Colors.white,            // Text color
+                  shape: const StadiumBorder(),             // Stadium shape
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: your function here
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FaceDetectionScreen(cameras: cameras)));
+                  // Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(builder: (context) => FaceDection2(cameras: cameras)));
+                  print('------ImageLabeling-----');
+                }, child: Text('FaceDetection',style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16
+              ),),),
+              SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,            // Button background
+                  foregroundColor: Colors.white,            // Text color
+                  shape: const StadiumBorder(),             // Stadium shape
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: your function here
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ObjectDetectionScreen(cameras: cameras)));
+                  // Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(builder: (context) => FaceDection2(cameras: cameras)));
+                  print('------ImageLabeling-----');
+                }, child: Text('ObjectDetection',style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16
+              ),),),
+
 
             ],
           ),
