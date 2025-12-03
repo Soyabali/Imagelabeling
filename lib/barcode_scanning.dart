@@ -8,9 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class BarcodeScanning extends StatefulWidget {
-  final List<CameraDescription> cameras;
+  //final List<CameraDescription> cameras;
 
-  const BarcodeScanning({Key? key, required this.cameras}) : super(key: key);
+  const BarcodeScanning({Key? key}) : super(key: key);
 
   @override
   State<BarcodeScanning> createState() => _CameraScreenState();
@@ -21,6 +21,7 @@ class _CameraScreenState extends State<BarcodeScanning> {
   CameraImage? img;
   bool isBusy = false;
   String result = "results will be shown";
+  late List<CameraDescription> cameras;
 
   //TODO declare scanner
   dynamic barcodeScanner;
@@ -68,36 +69,69 @@ class _CameraScreenState extends State<BarcodeScanning> {
   void initState() {
     super.initState();
     //TODO initialize scanner
-    final List<BarcodeFormat> formats = [BarcodeFormat.all];// here barCode scan all format there is in a ml kit
-    barcodeScanner = BarcodeScanner(formats: formats);
+    _loadCameras();
 
-    //TODO initialize the controller
+    // ML Kit barcode formats
+    final List<BarcodeFormat> formats = [BarcodeFormat.all];
+    barcodeScanner = BarcodeScanner(formats: formats);
+    // final List<BarcodeFormat> formats = [BarcodeFormat.all];// here barCode scan all format there is in a ml kit
+    // barcodeScanner = BarcodeScanner(formats: formats);
+    //
+    // //TODO initialize the controller
+    // controller = CameraController(
+    //   widget.cameras[0],// here back camra
+    //   ResolutionPreset.high,
+    //   imageFormatGroup: Platform.isAndroid
+    //       ? ImageFormatGroup.nv21 // for Android
+    //       : ImageFormatGroup.bgra8888,);
+    // controller.initialize().then((_) {
+    //   if (!mounted) {
+    //     return;
+    //   }
+    //   controller.startImageStream((image) => {
+    //     if (!isBusy) {isBusy = true, img = image, doBarcodeScanning()}
+    //   });
+    //   setState(() {});
+    // }).catchError((Object e) {
+    //   if (e is CameraException) {
+    //     switch (e.code) {
+    //       case 'CameraAccessDenied':
+    //         print('User denied camera access.');
+    //         break;
+    //       default:
+    //         print('Handle other errors.');
+    //         break;
+    //     }
+    //   }
+    // });
+  }
+  // STEP 1 → Load camera list internally
+  Future<void> _loadCameras() async {
+    cameras = await availableCameras();
+    initializeCamera();
+  }
+
+  // STEP 2 → Initialize camera after loading list
+  Future<void> initializeCamera() async {
     controller = CameraController(
-      widget.cameras[0],// here back camra
+      cameras[0], // back camera
       ResolutionPreset.high,
       imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.nv21 // for Android
-          : ImageFormatGroup.bgra8888,);
-    controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      controller.startImageStream((image) => {
-        if (!isBusy) {isBusy = true, img = image, doBarcodeScanning()}
-      });
-      setState(() {});
-    }).catchError((Object e) {
-      if (e is CameraException) {
-        switch (e.code) {
-          case 'CameraAccessDenied':
-            print('User denied camera access.');
-            break;
-          default:
-            print('Handle other errors.');
-            break;
-        }
+          ? ImageFormatGroup.nv21
+          : ImageFormatGroup.bgra8888,
+    );
+
+    await controller.initialize();
+
+    controller.startImageStream((image) {
+      if (!isBusy) {
+        isBusy = true;
+        img = image;
+        doBarcodeScanning();
       }
     });
+
+    if (mounted) setState(() {});
   }
 
   //TODO barcode scanning code here
@@ -167,7 +201,7 @@ class _CameraScreenState extends State<BarcodeScanning> {
     // it is used in android to convert the InputImage from Dart to Java
     // `rotation` is not used in iOS to convert the InputImage from Dart to Obj-C
     // in both platforms `rotation` and `camera.lensDirection` can be used to compensate `x` and `y` coordinates on a canvas
-    final camera = widget.cameras[1];
+    final camera = cameras[1];
     final sensorOrientation = camera.sensorOrientation;
     InputImageRotation? rotation;
     if (Platform.isIOS) {

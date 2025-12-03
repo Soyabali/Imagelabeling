@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 
 class ObjectDetectionScreen extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  const ObjectDetectionScreen({Key? key, required this.cameras})
+  //final List<CameraDescription> cameras;
+  const ObjectDetectionScreen({Key? key})
       : super(key: key);
 
   @override
@@ -20,6 +20,7 @@ class _ObjectDetectionScreenState extends State<ObjectDetectionScreen> {
   bool isBusy = false;
   CameraImage? img;
   List<DetectedObject> objects = [];
+  late List<CameraDescription> cameras;
 
   final _orientations = {
     DeviceOrientation.portraitUp: 0,
@@ -31,20 +32,24 @@ class _ObjectDetectionScreenState extends State<ObjectDetectionScreen> {
   @override
   void initState() {
     super.initState();
-
+    _loadCameras();
     final options = ObjectDetectorOptions(
       mode: DetectionMode.stream,
       classifyObjects: true,
       multipleObjects: true,
     );
-
     objectDetector = ObjectDetector(options: options);
+    //initializeCamera();
+
+  }
+  Future<void> _loadCameras() async {
+    cameras = await availableCameras();
     initializeCamera();
   }
 
   Future<void> initializeCamera() async {
     controller = CameraController(
-      widget.cameras[0], // BACK CAMERA
+      cameras[0], // BACK CAMERA
       ResolutionPreset.medium,
       enableAudio: false,
       imageFormatGroup:

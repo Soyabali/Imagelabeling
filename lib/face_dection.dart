@@ -8,8 +8,8 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class FaceDetectionScreen extends StatefulWidget {
 
-  final List<CameraDescription> cameras;
-  const FaceDetectionScreen({Key? key, required this.cameras})
+  //final List<CameraDescription> cameras;
+  const FaceDetectionScreen({Key? key})
       : super(key: key);
 
   @override
@@ -19,6 +19,7 @@ class FaceDetectionScreen extends StatefulWidget {
 class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
   late CameraController controller;
   late FaceDetector faceDetector;
+  late List<CameraDescription> cameras;
 
   bool isBusy = false;
   CameraImage? img;
@@ -34,6 +35,7 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCameras();
 
     // ML Kit Face detector settings
     final options = FaceDetectorOptions(
@@ -45,11 +47,15 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen> {
     faceDetector = FaceDetector(options: options);
     initializeCamera();
   }
+  Future<void> _loadCameras() async {
+    cameras = await availableCameras();
+    initializeCamera();
+  }
 
 
   Future<void> initializeCamera() async {
     controller = CameraController(
-      widget.cameras[1], // FRONT CAMERA (better for face)
+      cameras[1], // FRONT CAMERA (better for face)
       ResolutionPreset.high,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid

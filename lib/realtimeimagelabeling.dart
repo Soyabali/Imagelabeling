@@ -6,9 +6,9 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 
 class RealTimeImageLabeling extends StatefulWidget {
-  final List<CameraDescription> cameras;
+  //final List<CameraDescription> cameras;
 
-  const RealTimeImageLabeling({Key? key, required this.cameras}) : super(key: key);
+  const RealTimeImageLabeling({Key? key}) : super(key: key);
 
   @override
   State<RealTimeImageLabeling> createState() => _CameraScreenState();
@@ -22,6 +22,7 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
   bool isBusy = false;
   String result = "";
   dynamic imageLabeler;
+  late List<CameraDescription> cameras;
 
   // ---function to data represents-------
   List<Widget> _buildResultList() {
@@ -60,45 +61,44 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
   }
   //----end the function --------
 
+
+
   @override
   void initState() {
     super.initState();
     //TODO initialize labeler
-    final ImageLabelerOptions options = ImageLabelerOptions(confidenceThreshold: 0.5);
+    final ImageLabelerOptions options = ImageLabelerOptions(
+        confidenceThreshold: 0.5);
     imageLabeler = ImageLabeler(options: options);
+    _loadCameras();
+  }
+  // STEP 1: Load cameras inside screen
+  Future<void> _loadCameras() async {
+    cameras = await availableCameras();
+    initializeCamera();
+  }
+  // STEP 2: Initialize the camera after loading camera list
 
-    //TODO initialize the controller
+  Future<void> initializeCamera() async {
     controller = CameraController(
-      widget.cameras[1],// here you change back camra and front camera 0 is back and 1 is front camra
-      ResolutionPreset.high, imageFormatGroup: Platform.isAndroid
-        ? ImageFormatGroup.nv21 // for Android
-        : ImageFormatGroup.bgra8888,);
-    controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      controller.startImageStream((image) =>
-      {
-        if (!isBusy)
-          {
-            isBusy = true,
-            img = image,
-            doImageLabeling()
-          }
-      });
-      setState(() {});
-    }).catchError((Object e) {
-      if (e is CameraException) {
-        switch (e.code) {
-          case 'CameraAccessDenied':
-            print('User denied camera access.');
-            break;
-          default:
-            print('Handle other errors.');
-            break;
-        }
+      cameras[0], // 0 = back, 1 = front
+      ResolutionPreset.high,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.nv21
+          : ImageFormatGroup.bgra8888,
+    );
+
+    await controller.initialize();
+
+    controller.startImageStream((image) {
+      if (!isBusy) {
+        isBusy = true;
+        img = image;
+        doImageLabeling();
       }
     });
+
+    if (mounted) setState(() {});
   }
 
   doImageLabeling() async {
@@ -130,7 +130,7 @@ class _CameraScreenState extends State<RealTimeImageLabeling> {
     // `rotation` is not used in iOS to convert the InputImage from Dart to Obj-C
     // in both platforms `rotation` and `camera.lensDirection` can be used to compensate `x` and `y` coordinates on a canvas
     //final camera = _cameras[1];
-    final camera = widget.cameras[1];
+    final camera = cameras[1];
     final sensorOrientation = camera.sensorOrientation;
     InputImageRotation? rotation;
     if (Platform.isIOS) {

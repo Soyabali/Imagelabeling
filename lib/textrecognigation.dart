@@ -8,8 +8,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 class TextRecognitionScreen extends StatefulWidget {
 
-  final List<CameraDescription> cameras;
-  const TextRecognitionScreen({Key? key, required this.cameras})
+  //final List<CameraDescription> cameras;
+  const TextRecognitionScreen({Key? key})
       : super(key: key);
 
   @override
@@ -20,6 +20,7 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
 
   late CameraController controller;
   late TextRecognizer textRecognizer;
+  late List<CameraDescription> cameras;
 
   bool isBusy = false;
   CameraImage? img;
@@ -36,13 +37,18 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   void initState() {
     super.initState();
     textRecognizer = TextRecognizer();
+   /// initializeCamera();
+    _loadCameras();
+  }
+  Future<void> _loadCameras() async {
+    cameras = await availableCameras();
     initializeCamera();
   }
 
   Future<void> initializeCamera() async {
     // Initialize BACK Camera
     controller = CameraController(
-      widget.cameras[0],// back camra
+      cameras[0],// back camra
       ResolutionPreset.high,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
